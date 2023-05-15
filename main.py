@@ -4,6 +4,10 @@ from keep_alive import keep_alive
 from discord.ext import commands
 from discord.ui import Select, View
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 intents = discord.Intents.default()
 intents.members = True
 
@@ -27,5 +31,4 @@ if __name__ == '__main__':
 
 keep_alive()
 
-bot.run(
-    "MTEwMjk1NzIyNTAyODM3MDQ5Mw.Gg0spZ.J5dkhPRugRPHmFGAZHJpcAaV74S6dqKQxHql2U")
+bot.run(os.environ["TOKEN"])
