@@ -17,8 +17,9 @@ class Horario(orm_sqlite.Model):
 
 Horario.objects.backend = db
 
-##Horario.objects.create()
-
+if(not Horario.objects.table_exists()):
+    print("creating table")
+    Horario.objects.create_table()
 
 class HorariosView(discord.ui.View):
     current_day = ""
@@ -139,53 +140,52 @@ class Horarios(commands.Cog):
         ##get day of week index
         weekday = datetime.datetime.today().weekday()
         days = [
-            {"name": "lun","text":"Lunes"},
-            {"name": "mar","text":"Martes"},
-            {"name": "mie","text":"Miercoles"},
-            {"name": "jue","text":"Jueves"},
-            {"name": "vie","text":"Viernes"},
-            {"name": "sab","text":"Sabado"},
-            {"name": "dom","text":"Domingo"}
+            {"name": "Lun","text":"Lunes"},
+            {"name": "Mar","text":"Martes"},
+            {"name": "Mie","text":"Miercoles"},
+            {"name": "Jue","text":"Jueves"},
+            {"name": "Vie","text":"Viernes"},
+            {"name": "Sab","text":"Sabado"},
+            {"name": "Dom","text":"Domingo"}
         ]
 
         ##obtener horarios de todos los usuarios para el dia de hoy
         horarios = Horario.objects.find(filter=f"dia = '{days[weekday]['name']}' and entrada != '-'")
 
-        embed=discord.Embed(title="Horarios", description=days[weekday]['text'], color="0x00ccff")
+        embed=discord.Embed(title=days[weekday]['text'], description=f"Horarios", color=0x00ccff)
         embed.set_thumbnail(url="https://cdn.icon-icons.com/icons2/1863/PNG/512/schedule_118702.png")
         for horario in horarios:
-            user = await self.bot.fetch_user(int(horario["user"]))
-            embed.add_field(name=user.name, value=f"{horario['entrada']} - {horario['salida']}", inline=True)
+            embed.add_field(name=horario["user"], value=f"{horario['entrada']} - {horario['salida']}", inline=True)
         embed.set_footer(text="usa /horarios_edit para modificar tus horarios")
-        await ctx.send(embed=embed)
+        if len(horarios) > 0:
+            await ctx.respond(embed=embed)
+        else:
+            await ctx.respond("No hay horarios para hoy")
 
-    ##execute this function every day at 00:00
     @tasks.loop(minutes=20)
     async def background_tasks(self):
-        print("checking horarios")
         utc_now = pytz.utc.localize(datetime.datetime.utcnow())
         now = utc_now.astimezone(pytz.timezone("america/Argentina/Cordoba"))
-        if int(now.strftime("%H")) == 7 and int(
-            now.strftime("%M")) >= 30 and int(now.strftime("%M")) <= 52:
+        if int(now.strftime("%H")) == 8 and int(
+            now.strftime("%M")) >= 0 and int(now.strftime("%M")) <= 22:
             weekday = datetime.datetime.today().weekday()
             days = [
-                {"name": "lun","text":"Lunes"},
-                {"name": "mar","text":"Martes"},
-                {"name": "mie","text":"Miercoles"},
-                {"name": "jue","text":"Jueves"},
-                {"name": "vie","text":"Viernes"},
-                {"name": "sab","text":"Sabado"},
-                {"name": "dom","text":"Domingo"}
+                {"name": "Lun","text":"Lunes"},
+                {"name": "Mar","text":"Martes"},
+                {"name": "Mie","text":"Miercoles"},
+                {"name": "Jue","text":"Jueves"},
+                {"name": "Vie","text":"Viernes"},
+                {"name": "Sab","text":"Sabado"},
+                {"name": "Dom","text":"Domingo"}
             ]
 
             ##obtener horarios de todos los usuarios para el dia de hoy
             horarios = Horario.objects.find(filter=f"dia = '{days[weekday]['name']}' and entrada != '-'")
 
-            embed=discord.Embed(title="Horarios", description=days[weekday]['text'], color="0x00ccff")
+            embed=discord.Embed(title=days[weekday]['text'], description=f"Horarios", color=0x00ccff)
             embed.set_thumbnail(url="https://cdn.icon-icons.com/icons2/1863/PNG/512/schedule_118702.png")
             for horario in horarios:
-                user = await self.bot.fetch_user(int(horario["user"]))
-                embed.add_field(name=user.name, value=f"{horario['entrada']} - {horario['salida']}", inline=True)
+                embed.add_field(name=horario["user"], value=f"{horario['entrada']} - {horario['salida']}", inline=True)
             embed.set_footer(text="usa /horarios_edit para modificar tus horarios")
             if len(horarios) > 0:
                 await self.bot.get_channel(1100902014021533696).send(embed=embed)
