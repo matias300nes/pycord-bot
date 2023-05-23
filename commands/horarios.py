@@ -1,32 +1,47 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 from discord.ui import Select, Button, Modal, InputText, View
+import orm_sqlite  
+import datetime
+import pytz
+
+db = orm_sqlite.Database('bot.db')
+
+class Horario(orm_sqlite.Model):  
+
+    id = orm_sqlite.IntegerField(primary_key=True) # auto-increment
+    user = orm_sqlite.StringField()
+    dia = orm_sqlite.StringField()
+    entrada = orm_sqlite.StringField()
+    salida = orm_sqlite.StringField()
+
+Horario.objects.backend = db
+
+##Horario.objects.create()
 
 
 class HorariosView(discord.ui.View):
     current_day = ""
     current_user = ""
-    base = []
-    options1 = [
-        discord.SelectOption(label="8:00"),
-        discord.SelectOption(label="8:30"),
-        discord.SelectOption(label="9:00")
+    horario = None
+    options = [
+        "-","8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00",
+        "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"
     ]
 
-    options2 = [
-        discord.SelectOption(label="8:00"),
-        discord.SelectOption(label="8:30"),
-        discord.SelectOption(label="9:00")
-    ]
+    options1 = [discord.SelectOption(label=option) for option in options]
+
+    options2 = [discord.SelectOption(label=option) for option in options]
 
     async def button_callback(self, button, interaction):
         self.current_day = button.label
         self.current_user = str(interaction.user)
-        saved = None
-        for item in self.base:
-            if item["user"] == self.current_user and item[
-                    "dia"] == self.current_day:
-                saved = item
+        query = Horario.objects.find(filter=f"user = '{self.current_user}' AND dia = '{self.current_day}'")
+        if len(query) > 0:
+            self.horario = query[0]
+        else:
+            self.horario = None
+        print("HORARIO:",self.horario)
 
         button.style = discord.ButtonStyle.primary
         for child in self.children:
@@ -37,14 +52,14 @@ class HorariosView(discord.ui.View):
                 for option in child.options:
                     option.default = False
 
-            if saved is not None:
-                if "desde" in child.custom_id and saved["entrada"] is not None:
+            if self.horario is not None:
+                if "desde" in child.custom_id and self.horario["entrada"] is not None:
                     for option in child.options:
-                        if option.label == saved["entrada"]:
+                        if option.label == self.horario["entrada"]:
                             option.default = True
-                if "hasta" in child.custom_id and saved["salida"] is not None:
+                if "hasta" in child.custom_id and self.horario["salida"] is not None:
                     for option in child.options:
-                        if option.label == saved["salida"]:
+                        if option.label == self.horario["salida"]:
                             option.default = True
         await interaction.response.edit_message(view=self)
 
@@ -72,40 +87,40 @@ class HorariosView(discord.ui.View):
                        placeholder="Entrada",
                        options=options1)
     async def select_6_callback(self, select, interaction):
-        saved = None
-        for item in self.base:
-            if item["user"] == self.current_user and item[
-                    "dia"] == self.current_day:
-                saved = item
-                item["entrada"] = select.values[0]
-
-        if saved is None:
-            self.base.append({
+        if self.horario is None:
+            item = {
                 "user": self.current_user,
                 "dia": self.current_day,
                 "entrada": select.values[0],
                 "salida": None
-            })
+            }
+            horario = Horario(item)
+            horario.save()
+            self.horario = horario
+        else:
+            print("saving entrada")
+            self.horario["entrada"] = select.values[0]
+            self.horario.update()
         await interaction.response.defer()
 
     @discord.ui.select(custom_id="hasta",
                        placeholder="Salida",
                        options=options2)
     async def select_7_callback(self, select, interaction):
-        saved = None
-        for item in self.base:
-            if item["user"] == self.current_user and item[
-                    "dia"] == self.current_day:
-                saved = item
-                item["salida"] = select.values[0]
-
-        if saved is None:
-            self.base.append({
+        if self.horario is None:
+            item = {
                 "user": self.current_user,
                 "dia": self.current_day,
                 "entrada": None,
                 "salida": select.values[0]
-            })
+            }
+            horario = Horario(item)
+            horario.save()
+            self.horario = horario
+        else:
+            print("saving salida")
+            self.horario["salida"] = select.values[0]
+            self.horario.update()
         await interaction.response.defer()
 
 
@@ -113,10 +128,72 @@ class Horarios(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.background_tasks.start()
 
     @commands.slash_command()
     async def horarios_edit(self, ctx):
         await ctx.respond("Editar horarios", view=HorariosView())
+
+    @commands.slash_command()
+    async def horarios(self, ctx):
+        ##get day of week index
+        weekday = datetime.datetime.today().weekday()
+        days = [
+            {"name": "lun","text":"Lunes"},
+            {"name": "mar","text":"Martes"},
+            {"name": "mie","text":"Miercoles"},
+            {"name": "jue","text":"Jueves"},
+            {"name": "vie","text":"Viernes"},
+            {"name": "sab","text":"Sabado"},
+            {"name": "dom","text":"Domingo"}
+        ]
+
+        ##obtener horarios de todos los usuarios para el dia de hoy
+        horarios = Horario.objects.find(filter=f"dia = '{days[weekday]['name']}' and entrada != '-'")
+
+        embed=discord.Embed(title="Horarios", description=days[weekday]['text'], color="0x00ccff")
+        embed.set_thumbnail(url="https://cdn.icon-icons.com/icons2/1863/PNG/512/schedule_118702.png")
+        for horario in horarios:
+            user = await self.bot.fetch_user(int(horario["user"]))
+            embed.add_field(name=user.name, value=f"{horario['entrada']} - {horario['salida']}", inline=True)
+        embed.set_footer(text="usa /horarios_edit para modificar tus horarios")
+        await ctx.send(embed=embed)
+
+    ##execute this function every day at 00:00
+    @tasks.loop(minutes=20)
+    async def background_tasks(self):
+        print("checking horarios")
+        utc_now = pytz.utc.localize(datetime.datetime.utcnow())
+        now = utc_now.astimezone(pytz.timezone("america/Argentina/Cordoba"))
+        if int(now.strftime("%H")) == 7 and int(
+            now.strftime("%M")) >= 30 and int(now.strftime("%M")) <= 52:
+            weekday = datetime.datetime.today().weekday()
+            days = [
+                {"name": "lun","text":"Lunes"},
+                {"name": "mar","text":"Martes"},
+                {"name": "mie","text":"Miercoles"},
+                {"name": "jue","text":"Jueves"},
+                {"name": "vie","text":"Viernes"},
+                {"name": "sab","text":"Sabado"},
+                {"name": "dom","text":"Domingo"}
+            ]
+
+            ##obtener horarios de todos los usuarios para el dia de hoy
+            horarios = Horario.objects.find(filter=f"dia = '{days[weekday]['name']}' and entrada != '-'")
+
+            embed=discord.Embed(title="Horarios", description=days[weekday]['text'], color="0x00ccff")
+            embed.set_thumbnail(url="https://cdn.icon-icons.com/icons2/1863/PNG/512/schedule_118702.png")
+            for horario in horarios:
+                user = await self.bot.fetch_user(int(horario["user"]))
+                embed.add_field(name=user.name, value=f"{horario['entrada']} - {horario['salida']}", inline=True)
+            embed.set_footer(text="usa /horarios_edit para modificar tus horarios")
+            if len(horarios) > 0:
+                await self.bot.get_channel(1100902014021533696).send(embed=embed)
+
+    @background_tasks.before_loop
+    async def background_task_before(self):
+        await self.bot.wait_until_ready()
+
 
 
 def setup(bot):
