@@ -156,6 +156,35 @@ class Horarios(commands.Cog):
         embed.set_thumbnail(url="https://cdn.icon-icons.com/icons2/1863/PNG/512/schedule_118702.png")
         for horario in horarios:
             embed.add_field(name=horario["user"], value=f"{horario['entrada']} - {horario['salida']}", inline=True)
+
+        horas = ["08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
+        header = "08  09  10  11  12  13  14  15  16  17  18  19  20"
+        table = header + "\n"
+
+        for usuario in horarios:
+            fila = ""
+            tempName = usuario["user"]
+            for hora in horas:
+                if int(hora) == int(usuario["entrada"].split(":")[0]):
+                    fila += "|   "
+                elif int(hora) == int(usuario["salida"].split(":")[0]):
+                    fila += "|   "
+                elif int(hora) > int(usuario["entrada"].split(":")[0]):
+                    #agregar 4 letras de tempName y sacarlas de la variable
+                    if(tempName == ""):
+                        fila += "    "
+                    elif(len(tempName) < 4):
+                        fila += tempName + " "*(4-len(tempName))
+                        tempName = ""
+                    else:
+                        fila += tempName[0:4]
+                        tempName = tempName[4:]
+                else:
+                    fila += "    "
+            table += fila + "\n"
+
+        embed.add_field(name="Tabla horarios", value=f"```{table}```", inline=False)
+
         embed.set_footer(text="usa /horarios_edit para modificar tus horarios")
         if len(horarios) > 0:
             await ctx.respond(embed=embed)
@@ -186,6 +215,35 @@ class Horarios(commands.Cog):
             embed.set_thumbnail(url="https://cdn.icon-icons.com/icons2/1863/PNG/512/schedule_118702.png")
             for horario in horarios:
                 embed.add_field(name=horario["user"], value=f"{horario['entrada']} - {horario['salida']}", inline=True)
+
+            horas = ["08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
+            header = "08  09  10  11  12  13  14  15  16  17  18  19  20"
+            table = header + "\n"
+
+            for usuario in horarios:
+                fila = ""
+                tempName = usuario["user"]
+                for hora in horas:
+                    if int(hora) == int(usuario["entrada"].split(":")[0]):
+                        fila += "|   "
+                    elif int(hora) == int(usuario["salida"].split(":")[0]):
+                        fila += "|   "
+                    elif int(hora) > int(usuario["entrada"].split(":")[0]):
+                        #agregar 4 letras de tempName y sacarlas de la variable
+                        if(tempName == ""):
+                            fila += "    "
+                        elif(len(tempName) < 4):
+                            fila += tempName + " "*(4-len(tempName))
+                            tempName = ""
+                        else:
+                            fila += tempName[0:4]
+                            tempName = tempName[4:]
+                    else:
+                        fila += "    "
+                table += fila + "\n"
+
+            embed.add_field(name="Tabla horarios", value=f"```{table}```", inline=False)
+
             embed.set_footer(text="usa /horarios_edit para modificar tus horarios")
             if len(horarios) > 0:
                 await self.bot.get_channel(1100902014021533696).send(embed=embed)
