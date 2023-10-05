@@ -61,13 +61,13 @@ class Websites(commands.Cog):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url, timeout=100) as response:
                         if response.status != 200:
-                            res += f"{url}: {response.status}\n"
+                            res += f"{url}: {response.status} ERROR\n"
             except Exception as e:
-                res += f"{url}: ERROR\n"    
+                res += f"{url}: NO STATUS ERROR\n"    
 
         if(res != ""):
             embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)        
-            await self.bot.get_channel(1100902014021533696).send(embed=embed)
+            await self.bot.get_channel(1159503632220295270).send(embed=embed)
             
     @background_tasks.before_loop
     async def background_task_before(self):
