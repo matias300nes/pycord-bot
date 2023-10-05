@@ -58,7 +58,7 @@ class Websites(commands.Cog):
         embed.set_image(url=f"https://http.cat/{img_status}.jpg")
         await ctx.respond(embed=embed)
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=2)
     async def background_tasks(self):
         res = ""
         img_status = 522
