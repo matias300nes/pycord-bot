@@ -55,7 +55,7 @@ class Websites(commands.Cog):
             except Exception as e:
                 res += f"{url}: NO STATUS ERROR\n"
         embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)
-        embed=discord.set_image(url=f"https://http.cat/{img_status}.jpg")
+        embed.set_image(url=f"https://http.cat/{img_status}.jpg")
         await ctx.respond(embed=embed)
 
     @tasks.loop(minutes=5)
@@ -75,7 +75,7 @@ class Websites(commands.Cog):
 
         if(res != ""):
             embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)
-            embed.set_image(url=f"https://http.cat/{img_status}.jpg")        
+            embed.set_image(url=f"https://http.cat/{img_status}.jpg")      
             await self.bot.get_channel(1159503632220295270).send(embed=embed)
             
     @background_tasks.before_loop
