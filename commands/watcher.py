@@ -19,6 +19,7 @@ class Websites(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.background_tasks.start()
+        self.websites = ["https://terraloteos-app.com/rest", "https://beego.com.ar/api"]
 
     """
      @commands.slash_command()
@@ -36,23 +37,37 @@ class Websites(commands.Cog):
             newWebsite.save()
             await ctx.send(f"El sitio web {website_url} ha sido añadido.")
     """
+    @commands.slash_command()
+    async def website_status(self, ctx):
+        res = ""
+        for website in self.websites:
+            url = website
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, timeout=100) as response:
+                        res += f"{url}: {response.status}\n"
+            except Exception as e:
+                res += f"{url}: ERROR\n"
+        print("RES: ",res)
+        embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)
+        await ctx.respond(embed=embed)
+
     @tasks.loop(minutes=5)
     async def background_tasks(self):
-        ## get all websites
-        ##websites = Website.objects.all()
-
-        websites = ["https://terraloteos-app.com/rest", "https://beego.com.ar/api"]
-        
-        for website in websites:
+        res = ""
+        for website in self.websites:
             url = website
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url, timeout=100) as response:
                         if response.status != 200:
-                            await self.bot.get_channel(1100902014021533696).send(f"{url} returned status code {response.status}")
+                            res += f"{url}: {response.status}\n"
             except Exception as e:
-                print(f"Error checking {url}: {str(e)}")
-                await self.bot.get_channel(1100902014021533696).send(f"Error checking {url}: {str(e)}")
+                res += f"{url}: ERROR\n"    
+
+        if(res != ""):
+            embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)        
+            await self.bot.get_channel(1100902014021533696).send(embed=embed)
             
     @background_tasks.before_loop
     async def background_task_before(self):
