@@ -45,10 +45,13 @@ class Websites(commands.Cog):
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url, timeout=100) as response:
-                        res += f"{url}: {response.status}\n"
+                        if response.status == 200:
+                            res += f"{url}: {response.status} OK\n"
+                        else:
+                            res += f"{url}: {response.status} ERROR\n"
+                        
             except Exception as e:
-                res += f"{url}: ERROR\n"
-        print("RES: ",res)
+                res += f"{url}: NO STATUS ERROR\n"
         embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)
         await ctx.respond(embed=embed)
 
