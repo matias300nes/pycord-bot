@@ -45,7 +45,7 @@ class Websites(commands.Cog):
             url = website
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(url, timeout=100) as response:
+                    async with session.get(url) as response:
                         if response.status == 200:
                             res += f"{url}: {response.status} OK\n"
                         else:
@@ -61,12 +61,12 @@ class Websites(commands.Cog):
     @tasks.loop(minutes=5)
     async def background_tasks(self):
         res = ""
-        img_status = 200
+        img_status = 522
         for website in self.websites:
             url = website
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(url, timeout=100) as response:
+                    async with session.get(url) as response:
                         if response.status != 200:
                             res += f"{url}: {response.status} ERROR\n"
                             img_status = response.status
