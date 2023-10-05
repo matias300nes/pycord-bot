@@ -40,6 +40,7 @@ class Websites(commands.Cog):
     @commands.slash_command()
     async def website_status(self, ctx):
         res = ""
+        img_status = 200
         for website in self.websites:
             url = website
             try:
@@ -48,16 +49,19 @@ class Websites(commands.Cog):
                         if response.status == 200:
                             res += f"{url}: {response.status} OK\n"
                         else:
+                            img_status = response.status
                             res += f"{url}: {response.status} ERROR\n"
                         
             except Exception as e:
                 res += f"{url}: NO STATUS ERROR\n"
         embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)
+        embed=discord.set_image(url=f"https://http.cat/{img_status}.jpg")
         await ctx.respond(embed=embed)
 
     @tasks.loop(minutes=5)
     async def background_tasks(self):
         res = ""
+        img_status = 200
         for website in self.websites:
             url = website
             try:
@@ -65,11 +69,13 @@ class Websites(commands.Cog):
                     async with session.get(url, timeout=100) as response:
                         if response.status != 200:
                             res += f"{url}: {response.status} ERROR\n"
+                            img_status = response.status
             except Exception as e:
                 res += f"{url}: NO STATUS ERROR\n"    
 
         if(res != ""):
-            embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)        
+            embed=discord.Embed(title="STATUS", description=res, color=0x00ccff)
+            embed.set_image(url=f"https://http.cat/{img_status}.jpg")        
             await self.bot.get_channel(1159503632220295270).send(embed=embed)
             
     @background_tasks.before_loop
