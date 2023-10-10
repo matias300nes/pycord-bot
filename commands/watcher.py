@@ -19,29 +19,44 @@ class Websites(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.background_tasks.start()
-        self.websites = ["https://terraloteos-app.com/rest", "https://beego.com.ar/api"]
+        ##self.websites = ["https://terraloteos-app.com/rest", "https://beego.com.ar/api"]
+        self.last_response = ""
 
-    """
-     @commands.slash_command()
-    async def add_website(ctx, website_url: str):
-        print("URL: ",website_url.value)
+    @commands.slash_command()
+    async def website_add(self, ctx, url: discord.Option(str, description="URL del sitio web a monitorear", required=True)):
         # Verifica si el sitio web ya está en la base de datos
-        existing_website = Website.objects.find(filter=f"url = '{website_url}'")
-        print(existing_website)
+        existing_website = Website.objects.find(filter=f"url = '{url}'")
         
         if existing_website:
-            await ctx.send(f"El sitio web {website_url} ya está en la lista.")
+            await ctx.respond(f"El sitio web {url} ya está en la lista.")
         else:
             # Agrega el nuevo sitio web a la base de datos
-            newWebsite = Website({"url": website_url})
+            newWebsite = Website({"url": url})
             newWebsite.save()
-            await ctx.send(f"El sitio web {website_url} ha sido añadido.")
-    """
+            await ctx.respond(f"El sitio web {url} ha sido añadido.")
+
+    @commands.slash_command()
+    async def website_delete(self, ctx, url: discord.Option(str, description="URL del sitio web a monitorear", required=True)):
+        # Verifica si el sitio web ya está en la base de datos
+        existing_website = Website.objects.find(filter=f"url = '{url}'")
+        
+        if existing_website:
+            # Elimina el sitio web de la base de datos
+            existing_website.delete()
+            await ctx.respond(f"El sitio web {url} ha sido eliminado.")
+        else:
+            await ctx.respond(f"El sitio web {url} no está en la lista.")
+        
+   
     @commands.slash_command()
     async def website_status(self, ctx):
+        websites = Website.objects.all()
+        ##map website and return only url
+        websites = map(lambda x: x["url"], websites)
+
         res = ""
         img_status = 200
-        for website in self.websites:
+        for website in websites:
             url = website
             try:
                 async with aiohttp.ClientSession() as session:
@@ -60,9 +75,12 @@ class Websites(commands.Cog):
 
     @tasks.loop(minutes=2)
     async def background_tasks(self):
+        websites = Website.objects.all()
+        ##map website and return only url
+        websites = map(lambda x: x["url"], websites)
         res = ""
         img_status = 522
-        for website in self.websites:
+        for website in websites:
             url = website
             try:
                 async with aiohttp.ClientSession() as session:
