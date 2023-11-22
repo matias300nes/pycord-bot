@@ -42,7 +42,7 @@ class Websites(commands.Cog):
         
         if existing_website:
             # Elimina el sitio web de la base de datos
-            existing_website.delete()
+            existing_website[0].delete()
             await ctx.respond(f"El sitio web {url} ha sido eliminado.")
         else:
             await ctx.respond(f"El sitio web {url} no está en la lista.")
